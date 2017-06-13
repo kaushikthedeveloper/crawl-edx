@@ -21,7 +21,7 @@ class Edx_pageSpider(scrapy.Spider):
         #get passed Course Urls
         for i,course_obj in enumerate(JSONresponse["objects"]["results"]):
             course_url=course_obj["marketing_url"]
-            yield scrapy.Request(url=course_url, callback=self.parseCourse)
+            yield scrapy.Request(url=course_url, callback=self.parseCourse,errback=self.errorLog)
 
         self.log('\n\n----------- Next Url : '+ str(JSONresponse["objects"]["next"])+'-----------\n\n')
 
@@ -30,7 +30,7 @@ class Edx_pageSpider(scrapy.Spider):
         if next_url is not None:
             #manually increase result count from 9 to 500 (increase efficiency)
             next_url=str(next_url).replace("page_size=9","page_size=500")
-            yield scrapy.Request(url=next_url, callback=self.getNextCourseUrls)
+            yield scrapy.Request(url=next_url, callback=self.getNextCourseUrls,errback=self.errorLog)
         else:
             self.log("\n\n----------- DONE ! ! ! Last Url : %s-----------\n\n", response)
 
@@ -51,7 +51,7 @@ class Edx_pageSpider(scrapy.Spider):
         if next_url is not None:
             #manually increase result count from 9 to 500
             next_url = str(next_url).replace("page_size=9", "page_size=500")
-            yield scrapy.Request(url=next_url, callback=self.getNextCourseUrls)
+            yield scrapy.Request(url=next_url, callback=self.getNextCourseUrls,errback=self.errorLog)
         else:
             self.log("\n\n----------- DONE ! ! ! Last Url : %s-----------\n\n" %response)
 
@@ -63,7 +63,7 @@ class Edx_pageSpider(scrapy.Spider):
         self.log("\n\n---------- GET at : %s -----------\n\n" %JSONDataUrl)
 
         full_url='https://www.edx.org/api/catalog/v2/courses/'+JSONDataUrl
-        yield scrapy.Request(url=full_url,callback=self.parseCourseJSON)
+        yield scrapy.Request(url=full_url,callback=self.parseCourseJSON,errback=self.errorLog)
 
     #Course selected : JSON values
     def parseCourseJSON(self,response):
@@ -129,18 +129,19 @@ class Edx_pageSpider(scrapy.Spider):
         yield item
 
 
-    #Error Logging when getting individual Course Page
+    #Error Logging
     def errorLog(self,failure):
-        # log all failures
-        self.logger.error(str(datetime.now())+" : "+repr(failure))
-        with open("error_crawl.txt", 'wb') as f:
-            f.write(str(datetime.now())+" : "+repr(failure))
+        #log all failures
+        self.logger.error(str(datetime.now()) + " : " + repr(failure))
+        with open("./Output/error_crawl.txt", 'a') as f:
+            f.write(str(datetime.now()) + " : " + repr(failure) + "\n")
 
-    #main
+
+    #---------------main--------------------
     def parse(self, response):
         self.log("\n\n---------- Getting Courses main page : %s -----------\n\n" %response)
 
         #link to get the course list at start (following url found by checking http calls)
         JSONDataUrl='https://www.edx.org/api/v1/catalog/search?selected_facets[]=content_type_exact%3Acourserun&featured_course_ids=course-v1:Microsoft+DAT101x+2T2017,course-v1:W3Cx+HTML5.0x+1T2017,course-v1:ASUx+ENG101x+2174C,course-v1:Microsoft+DEV236x+1T2017,course-v1:HKUSTx+COMP102.1x+2T2017,course-v1:PennX+ROBO1x+1T2017&featured_programs_uuids=98b7344e-cd44-4a99-9542-09dfdb11d31b,482dee71-e4b9-4b42-a47b-3e16bb69e8f2,865bbad4-6643-4d59-85d3-936cf3a7acf4,a015ce08-a727-46c8-92d1-679b23338bc1,7fdfb297-34f3-425a-9dcd-4a278164754a,8ac6657e-a06a-4a47-aba7-5c86b5811fa1'
         #Forward to the JSON link
-        yield scrapy.Request(url=JSONDataUrl,callback=self.getFirstCourseUrls)
+        yield scrapy.Request(url=JSONDataUrl,callback=self.getFirstCourseUrls,errback=self.errorLog)
