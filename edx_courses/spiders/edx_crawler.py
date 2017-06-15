@@ -133,7 +133,7 @@ class Edx_pageSpider(scrapy.Spider):
     def errorLog(self,failure):
         #log all failures
         self.logger.error(str(datetime.now()) + " : " + repr(failure))
-        with open("./Output/error_crawl.txt", 'a') as f:
+        with open("./example_output/error_crawl.txt", 'a') as f:
             f.write(str(datetime.now()) + " : " + repr(failure) + "\n")
 
 
